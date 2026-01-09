@@ -22,6 +22,13 @@ This lab demonstrates advanced routing integration between three different Auton
 - **OSPF Adjacencies**: Confirmed in FULL state within the core.
 - **Data Plane**: Successful `traceroute` from AS 65000 (C1) to AS 65002 (C4), proving correct path selection across multiple AS.
 
+<img width="1615" height="858" alt="Captura de ecrã 2026-01-09 031111" src="https://github.com/user-attachments/assets/e720fb45-4827-4219-b83f-3a8c1a88b54b" />
+<img width="1591" height="842" alt="Captura de ecrã 2026-01-09 031205" src="https://github.com/user-attachments/assets/4bec97dc-47e8-45eb-9270-595752627f3a" />
+<img width="1599" height="825" alt="Captura de ecrã 2026-01-09 031329" src="https://github.com/user-attachments/assets/2fcf4c62-5a81-4e62-8e59-ab9cd37355fb" />
+<img width="1596" height="852" alt="Captura de ecrã 2026-01-09 031349" src="https://github.com/user-attachments/assets/146c22ed-95df-4ee4-ab35-04514d12c24a" />
+<img width="1653" height="819" alt="Captura de ecrã 2026-01-09 031432" src="https://github.com/user-attachments/assets/5f74831c-8b3f-42f8-a443-8bf6fd2ef283" />
+<img width="1342" height="804" alt="Captura de ecrã 2026-01-09 031539" src="https://github.com/user-attachments/assets/4358666f-05f8-4d7e-a26e-8d02f9fb95e2" />
+
 ## 🚀 Key Configurations
 Example of Route Reflector configuration on **IP3**:
 ```cisco
