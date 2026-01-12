@@ -1,91 +1,116 @@
-# 🚀 Infrastructure Réseau & Systèmes d'Entreprise (Lab Haute Disponibilité)
+# 🚀 Infrastructure d'Entreprise Hautement Disponible et Sécurisée
 
-## 📝 Présentation du Projet
-Ce projet consiste en la mise en place d'une infrastructure informatique d'entreprise complète et résiliente. L'architecture simule un environnement de production réel intégrant des solutions **Cisco**, **Fortinet**, **Windows Server** et **Linux**.
+## 📝 1. Introduction
+Ce projet consiste en la conception et la mise en œuvre d'une infrastructure informatique "Full Stack" simulant un environnement de production réel. L'objectif principal est de garantir la **Haute Disponibilité (HA)**, la **Sécurité Périmétrique** et une **Connectivité Totale** via une résolution de noms (DNS) centralisée.
 
-L'accent est mis sur la **Haute Disponibilité (HA)**, la **segmentation réseau (VLANs)** et la **sécurité périmétrique**.
+L'infrastructure repose sur un environnement hybride :
+*   **Réseau :** Équipements Cisco (Cœur de réseau) et FortiGate (Sécurité).
+*   **Systèmes :** Windows Server 2022 (Identité) et Linux Debian/Ubuntu (Applications & Services).
 
 ---
 
-## 🏗️ 1. Architecture Réseau & Cœur de Réseau
+## 🏗️ 2. Architecture Réseau & Redondance
 
-### 1.1 Redondance et Performance
-Pour garantir un temps d'arrêt minimal, l'infrastructure repose sur :
-*   **Cluster Firewall :** Deux unités **FortiGate** configurées en **Haute Disponibilité (Mode Actif-Passif)**.
-*   **Cœur de Réseau Cisco :** Utilisation de l'agrégation de liens **LACP (EtherChannel)** entre les commutateurs Core et Distribution pour doubler la bande passante et assurer la redondance physique.
-*   **STP (Spanning Tree) :** Configuration de **Rapid-PVST+** pour prévenir les boucles tout en assurant une convergence réseau ultra-rapide.
-
-### 1.2 Segmentation du Réseau (VLANs)
-| VLAN | Nom | Sous-réseau | Passerelle | Usage |
+### 2.1 Segmentation par VLANs
+| ID | Nom | Sous-réseau | Gateway (FG) | Usage |
 | :--- | :--- | :--- | :--- | :--- |
-| 10 | **USERS** | 192.168.10.0/24 | .1 | Postes de travail clients |
-| 20 | **SERVERS** | 192.168.20.0/24 | .1 | Cœur des services (AD, Mail, Zabbix) |
-| 30 | **ADMIN** | 192.168.30.0/24 | .1 | Postes d'administration (Jump Hosts) |
-| 40 | **VOIP** | 192.168.40.0/24 | .1 | Téléphonie IP |
-| 60 | **GUEST** | 172.16.60.0/24 | .1 | Wi-Fi Visiteurs (Accès Internet uniquement) |
-| 99 | **MGMT** | 10.0.99.0/24 | .1 | Gestion des switches et APs |
+| 10 | **USERS** | 192.168.10.0/24 | 192.168.10.1 | Postes clients et utilisateurs |
+| 20 | **SERVERS** | 192.168.20.0/24 | 192.168.20.1 | Cœur des services (AD, Mail, Zabbix) |
+| 30 | **ADMIN** | 192.168.30.0/24 | 192.168.30.1 | Postes IT et Jump Hosts d'admin |
+| 40 | **VOIP** | 192.168.40.0/24 | 192.168.40.1 | Téléphonie IP (QoS priorisée) |
+| 60 | **GUEST** | 172.16.60.0/24 | 172.16.60.1 | Wi-Fi Invités (Accès Internet uniquement) |
+| 99 | **MGMT** | 10.0.99.0/24 | 10.0.99.1 | Gestion (Switches, Routers, APs) |
+
+### 2.2 Cœur de Réseau & Haute Disponibilité
+*   **FortiGate HA Cluster :** Deux unités en mode **Actif-Passif** assurant la continuité du routage inter-VLAN et de la sécurité.
+*   **Cisco EtherChannel (LACP) :** Agrégation de liens entre les switches de cœur pour la redondance et l'augmentation de la bande passante.
+*   **Spanning-Tree (Rapid-PVST+) :** Configuration optimisée pour éviter les boucles avec une convergence rapide (< 2s).
+*   **Routage Inter-VLAN :** Centralisé sur le FortiGate pour permettre l'inspection UTM (Antivirus/IPS) entre les zones.
 
 ---
 
-## 🖥️ 2. Inventaire des Services Systèmes
+## 🌐 3. Services de Nommage & Adressage (DNS & DHCP)
 
-### 🪟 Infrastructure Windows (Active Directory)
-*   **Domaine :** `corp.local`
-*   **SRV-AD01 / SRV-AD02 :** Contrôleurs de domaine redondants (AD DS), DNS intégré et serveurs DHCP centralisés (via *IP Helper-address*).
-*   **SRV-FS01 :** Serveur de fichiers avec gestion des quotas et partages départementaux.
-*   **SRV-RDS01 :** Serveur de bureau à distance pour l'accès aux outils d'administration.
+### 3.1 Matrice DNS (Connectivité Totale)
+Le DNS est le pilier de l'infrastructure. Chaque machine est enregistrée dans l'Active Directory pour permettre le **ping par nom FQDN** entre tous les segments.
 
-### 🐧 Services Linux Critiques
-*   **LNX-MAIL01 (Zimbra) :** Serveur de messagerie et de collaboration (SMTP, IMAP, Webmail).
-*   **LNX-ZBX01 (Zabbix) :** Supervision proactive via **SNMP** (Cisco/FortiGate) et **Agents** (Windows/Linux).
-*   **LNX-STO01 (Stockage & Transfert) :**
-    *   **NFS :** Stockage réseau pour les sauvegardes Linux.
-    *   **TFTP :** Sauvegarde automatisée des configurations des équipements Cisco.
-    *   **FTPS :** Serveur de fichiers sécurisé via TLS pour les échanges externes.
-*   **LNX-MGMT01 :** Passerelle SSH (Bastion) et serveur de logs centralisé (Syslog).
+**Zone Directe : `corp.local`**
+| Nom d'hôte | Adresse IP | Type | Description |
+| :--- | :--- | :--- | :--- |
+| `srv-ad01.corp.local` | 192.168.20.10 | A / PTR | Contrôleur de domaine (Primaire) |
+| `srv-ad02.corp.local` | 192.168.20.11 | A / PTR | Contrôleur de domaine (Secondaire) |
+| `srv-fs01.corp.local` | 192.168.20.12 | A | Serveur de Fichiers Windows |
+| `lnx-mail01.corp.local`| 192.168.20.51 | A / MX | Serveur de Mail (Zimbra) |
+| `lnx-zbx01.corp.local` | 192.168.20.50 | A | Serveur Supervision (Zabbix) |
+| `lnx-sto01.corp.local` | 192.168.20.52 | A | Serveur Stockage (NFS/TFTP/FTPS) |
+| `fw-cluster.corp.local`| 192.168.99.1 | A | Cluster FortiGate (Management) |
+| `sw-core01.corp.local` | 192.168.99.10 | A | Switch Cœur de Réseau |
 
----
-
-## 🛡️ 3. Stratégie de Sécurité
-
-### 3.1 Politiques de Firewall (FortiGate)
-Le routage inter-VLAN est centralisé sur le FortiGate pour permettre une inspection UTM complète :
-*   **Filtrage Granulaire :** USERS vers SERVERS limité aux protocoles nécessaires (AD, SMB, DNS).
-*   **Isolation Guest :** Le VLAN 60 n'a aucune communication avec les autres VLANs.
-*   **VPN SSL :** Accès distant sécurisé pour les administrateurs avec authentification AD (LDAP).
-
-### 3.2 Sécurité de la Couche 2 (Cisco)
-*   **BPDU Guard & Root Guard :** Protection de la topologie Spanning-Tree.
-*   **Port-Security :** Limitation du nombre d'adresses MAC sur les ports d'accès utilisateurs.
-*   **VLAN natif :** Sécurisation des trunks en changeant le VLAN par défaut (VLAN 1).
+### 3.2 DHCP & IP Helper
+*   **Serveur DHCP :** Centralisé sur Windows Server (SRV-AD01).
+*   **DHCP Relay :** Configuré sur le FortiGate via la commande `set dhcp-relay ip 192.168.20.10` pour chaque interface VLAN.
+*   **Options DHCP :** 
+    *   Option 003 (Gateway) 
+    *   Option 006 (DNS : 192.168.20.10)
+    *   Option 066 (TFTP Server : 192.168.20.52).
 
 ---
 
-## 🚀 4. Guide d'Implémentation
+## 🪟 4. Infrastructure Windows (Active Directory)
 
-### Phase 1 : Infrastructure Réseau Base
-1. Configuration des VLANs, VTP et Trunks sur les switches Cisco.
-2. Mise en place de l'**EtherChannel (LACP)**.
-3. Configuration du cluster HA FortiGate et des sous-interfaces (Gateways).
+### 4.1 Gestion des Identités (AD DS)
+*   **Structure des OUs :** Organisation par départements (Direction, RH, IT, Finance).
+*   **Groupes de sécurité :** Gestion des permissions NTFS et accès VPN.
+*   **GPO :** Montage automatique des lecteurs réseau et déploiement des agents de sécurité.
 
-### Phase 2 : Cœur Windows
-1. Déploiement du premier contrôleur de domaine (AD DS).
-2. Configuration des étendues DHCP et pointage DNS vers l'AD.
-3. Jointure des serveurs membres et des postes clients au domaine.
-
-### Phase 3 : Services Linux & Supervision
-1. Installation de **Zimbra** (Configuration des enregistrements DNS MX et SPF).
-2. Déploiement de **Zabbix** et configuration des tableaux de bord de supervision.
-3. Activation des services de stockage (NFS/TFTP) et scripts de sauvegarde.
+### 4.2 Services Bureau à Distance (RDS)
+*   **SRV-RDS01 :** Permet aux administrateurs et utilisateurs distants d'accéder aux outils internes via une passerelle sécurisée.
 
 ---
 
-## 🔑 5. Informations d'Accès (Lab)
-*   **Domaine :** `corp.local`
-*   **Administrateur :** `administrator@corp.local`
-*   **Serveur Zabbix :** `http://192.168.20.50/zabbix`
-*   **Webmail :** `https://mail.corp.local`
-*   **Gestion Réseau :** Accessibles via SSH sur le VLAN 99.
+## 🐧 5. Services Linux & Collaboration
+
+### 5.1 Zimbra Collaboration (Mail)
+*   **LNX-MAIL01 :** Serveur de messagerie complet.
+*   **Enregistrements DNS :** MX configuré vers l'IP Linux et SPF/DKIM pour la sécurité des mails.
+
+### 5.2 Supervision (Zabbix)
+*   **LNX-ZBX01 :** Centralisation des alertes.
+*   **Protocoles :** SNMP v3 pour Cisco/FortiGate et Zabbix Agent pour les serveurs Windows/Linux.
+
+### 5.3 Stockage & FTP (LNX-STO01)
+*   **NFS :** Partages pour les backups des serveurs Linux.
+*   **TFTP :** Utilisé pour la sauvegarde automatique des fichiers de configuration Cisco.
+*   **FTPS :** Serveur FTP sécurisé via TLS pour les transferts de fichiers externes.
+*   **Samba :** Membre du domaine AD pour une intégration transparente des fichiers.
 
 ---
-> **Note :** Ce projet est un environnement de laboratoire simulant des standards industriels de haute performance.
+
+## 🛡️ 6. Sécurité & Pare-feu
+
+### 6.1 Politiques de Flux (Firewall)
+| Source | Destination | Service | Action |
+| :--- | :--- | :--- | :--- |
+| VLAN_USERS | VLAN_SERVERS | DNS, AD, SMB, HTTPS | **ACCEPT** |
+| VLAN_ADMIN | TOUS | SSH, RDP, HTTPS | **ACCEPT** |
+| Internet | LNX-MAIL01 | SMTP (25), HTTPS (443) | **ACCEPT (NAT)** |
+| VLAN_GUEST | Internet | HTTP, HTTPS | **ACCEPT** |
+
+### 6.2 Sécurité de Commutation (Cisco)
+*   **Port-Security :** Limitation des adresses MAC par port utilisateur.
+*   **BPDU Guard :** Protection contre l'insertion de switches non autorisés.
+*   **Isolation :** Désactivation des ports non utilisés et assignation au VLAN "Dead-End".
+
+---
+
+## 🛠️ 7. Procédures de Test & Validation
+Pour valider l'infrastructure, les tests suivants sont réalisés :
+1.  **Test DNS :** `ping lnx-mail01.corp.local` depuis un PC client (Vérification de la résolution et du routage).
+2.  **Test DHCP :** Vérifier qu'un PC en VLAN 10 reçoit une IP du scope Windows.
+3.  **Test Redondance :** Déconnexion d'un lien EtherChannel (Vérification du basculement sans coupure).
+4.  **Test Mail :** Envoi et réception d'un mail interne via l'interface Web Zimbra.
+5.  **Test Backup :** Exécution d'un `copy running-config tftp` depuis le switch vers LNX-STO01.
+
+---
+**Maintenu par :** Équipe Admin Système & Réseau
+**Statut :** Opérationnel / En production
