@@ -9,7 +9,8 @@ Ce projet simule une infrastructure réseau d'entreprise complète et sécurisé
 
 L'infrastructure est segmentée pour garantir une sécurité maximale. Aucun serveur interne n'est exposé directement à l'internet (WAN).
 
-### <img width="756" height="686" alt="image" src="https://github.com/user-attachments/assets/7d7ee1d7-5605-410b-add3-e56d81cfa45a" />
+### <img width="1050" height="490" alt="image" src="https://github.com/user-attachments/assets/99ab56bf-ba2b-4bd8-b819-6ad87a3eeb62" />
+
 
 
 > *Légende : Topologie Triple-Layer (Gateway, Auth Server, Proxy Server).*
