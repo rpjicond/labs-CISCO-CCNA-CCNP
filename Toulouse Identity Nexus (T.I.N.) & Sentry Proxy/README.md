@@ -16,28 +16,7 @@ L'infrastructure est segmentée pour garantir une sécurité maximale. Aucun ser
 
 > *Légende : Topologie Triple-Layer (Gateway, Auth Server, Proxy Server).*
 
-graph TD
-    subgraph WAN [Zona Internet]
-        WEB((Internet))
-    end
 
-    subgraph LAN [Rede Privada Toulouse - 10.0.0.0/24]
-        GW[srv-gateway-01<br/>10.0.0.1<br/>NAT/Firewall]
-        PROXY[srv-proxy-01<br/>10.0.0.30<br/>Squid Proxy]
-        AUTH[srv-auth-01<br/>10.0.0.10<br/>OpenLDAP]
-        USER[Utilisateurs/Clients]
-    end
-
-    %% Fluxo de Comunicação
-    USER -->|1. Requisição Porta 3128| PROXY
-    PROXY <-.->|2. Validação de Senha Porta 389| AUTH
-    PROXY -->|3. Tráfego Autorizado| GW
-    GW <-->|4. Saída via NAT| WEB
-
-    %% Estilização
-    style GW fill:#f96,stroke:#333,stroke-width:2px
-    style PROXY fill:#69f,stroke:#333,stroke-width:2px
-    style AUTH fill:#6f9,stroke:#333,stroke-width:2px
 ---
 
 ## 🛠️ 2. Composants du Projet
