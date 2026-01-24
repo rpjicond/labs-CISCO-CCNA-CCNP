@@ -9,7 +9,8 @@ Ce projet simule une infrastructure réseau d'entreprise complète et sécurisé
 
 L'infrastructure est segmentée pour garantir une sécurité maximale. Aucun serveur interne n'est exposé directement à l'internet (WAN).
 
-### 🖼️ [INSERIR AQUI A IMAGEM DO ESQUEMA QUE O GEMINI GEROU]
+### <img width="776" height="762" alt="Captura de ecrã 2026-01-24 230640" src="https://github.com/user-attachments/assets/b77ffeaa-0ef2-4de1-a66e-962cddac9edc" />
+
 > *Légende : Topologie Triple-Layer (Gateway, Auth Server, Proxy Server).*
 
 ---
@@ -22,7 +23,8 @@ Un outil d'administration avancé écrit en **Bash** qui automatise la gestion d
 *   **Sécurité :** Hachage SSHA des mots de passe.
 *   **Interface :** Design moderne avec animations (spinners) et codes couleurs ANSI.
 
-### 🖼️ [INSERIR AQUI O PRINT DO MENU AZUL DO NEXUS_LDAP.SH]
+### <img width="1053" height="630" alt="Captura de ecrã 2026-01-24 232517" src="https://github.com/user-attachments/assets/73df75a7-b334-469f-acb2-b67045989927" />
+
 > *Capture d'écran de l'interface Nexus CLI en action.*
 
 ---
@@ -33,7 +35,8 @@ Serveur **Squid Proxy** durci, agissant comme le gardien du réseau.
 *   **Filtrage :** Blacklistage de domaines (ACLs) pour interdire les réseaux sociaux.
 *   **Observabilité :** Dashboard de monitoring en temps réel développé sur mesure.
 
-### 🖼️ [INSERIR AQUI O PRINT DA TABELA DE MONITORAMENTO (VERDE/VERMELHO)]
+### <img width="1038" height="620" alt="Captura de ecrã 2026-01-24 232335" src="https://github.com/user-attachments/assets/f9c4a234-ed99-4ac9-a4fa-a2d7e10c6623" />
+
 > *Dashboard Sentry affichant les flux autorisés (Google) et bloqués (Facebook).*
 
 ---
