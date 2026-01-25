@@ -1,97 +1,103 @@
-# 🚀 Infrastructure d'Entreprise : Conception et Déploiement (Full-Mesh HA)
+# 🚀 Projet HORIZON: Architecture Réseau d'Entreprise (3-Tier, FortiOS & Zabbix)
+> **Déploiement d'une infrastructure hybride Zero-Trust pour centres de données, avec supervision proactive et haute disponibilité.**
 
-## 📝 1. Introduction
-Ce projet représente la conception et la documentation d'une infrastructure réseau et systèmes de classe "Mission-Critical". L'architecture vise une **tolérance aux pannes absolue (Zero Single Point of Failure)** grâce à un **Cœur de réseau en maillage total (Full-Mesh Core)** et un **Cluster de Pare-feu redondant**. L'objectif est de garantir une disponibilité de service de 99.99% pour toutes les applications métiers.
+Ce projet est une conception et une implémentation d'une architecture réseau d'entreprise complète, modélisée sur un campus d'entreprise de Toulouse. Il intègre des couches de réseau Cisco (Core, Distribution, Accès), une sécurité périmétrique Fortinet et une supervision centralisée avec Zabbix 7.0.
 
----
-
-## 🏗️ 2. Architecture Réseau (Le Backbone de Haute Performance)
-
-L'infrastructure est composée de **12 équipements réseau actifs** (3 Routeurs de Bordure, 2 Firewalls, 4 Commutateurs Cœur, 3 Commutateurs d'Accès, 1 Commutateur DMZ, 1 Commutateur VoIP) configurés pour une résilience maximale.
-
-### 2.1 Couche Bordure & Sécurité (Full-Mesh HA)
-*   **Routeurs de Bordure (EDGE-01, EDGE-02, EDGE-03) :**
-    *   **EDGE-01 & EDGE-02 :** Assurent la terminaison WAN/Internet et se connectent au Cluster FortiGate.
-    *   **EDGE-03 :** Sert de routeur de distribution interne pour des services spécifiques ou comme point d'agrégation.
-*   **Cluster FortiGate (FG-01 & FG-02) :** 
-    *   **Redondance Périmétrique :** Les Routeurs de Bordure se connectent aux deux firewalls.
-    *   **Redondance vers le Cœur (Full-Mesh HA) :** Chaque firewall est connecté aux deux cœurs de réseau du haut (`CORE-01` et `CORE-03` pour l'image).
-    *   *Objectif :* Maintenir la connectivité même en cas de panne simultanée d'un lien WAN, d'une unité de pare-feu et d'un switch de cœur.
-
-### 2.2 Le Cœur de Réseau (Core Quad Mesh)
-Le cœur du réseau est un maillage de **4 commutateurs Cisco Multicouches (CORE-01 à CORE-04)** :
-*   **Maillage Total (Full-Mesh) :** Tous les commutateurs de cœur sont interconnectés via des agrégats de liens **LACP (Port-Channel)**.
-*   **Protocoles :** **Rapid-PVST+** (Spanning Tree) pour la gestion des boucles et un routage L3 distribué.
-
-### 2.3 Couche d'Accès (Distribution Départementale)
-Quatre commutateurs Cisco dédiés, connectés en **Dual-Homing** vers le bloc de Cœur :
-*   **SW-01 (Accès Mixte) :** Connectivité pour `VLAN 10 (UTILISATEURS)` et `VLAN 60 (INVITÉS)`.
-*   **SW-02 (DMZ / Serveurs) :** Dédié à la `VLAN 20 (SERVEURS)` et à la `VLAN 50 (DMZ)`.
-*   **SW-03 (Accès Administratif) :** Gère la `VLAN 30 (ADMINISTRATION)` et `VLAN 99 (MANAGEMENT)`.
-*   **SW-04 (Réserve/Expansion) :** Commutateur pour l'expansion future ou pour les `VLAN 10/40` supplémentaires.
-
-### 2.4 VLANs & Adressage IP
-| VLAN | Nom | Sous-réseau | Rôle | Connecté à |
-| :--- | :--- | :--- | :--- | :--- |
-| 10 | UTILISATEURS | 192.168.10.0/24 | Postes clients, Wi-Fi interne | SW-01, SW-04 |
-| 20 | SERVEURS | 192.168.20.0/24 | Serveurs internes (AD, Zimbra, Zabbix) | SW-02 |
-| 30 | ADMINISTRATION | 192.168.30.0/24 | Postes IT et Jump Hosts | SW-03 |
-| 40 | VOIP | 192.168.40.0/24 | Téléphonie IP (QoS) | SW-01, SW-04 |
-| 50 | DMZ | 192.168.50.0/24 | Serveurs publics (Web, Proxy Mail) | SW-02 |
-| 60 | INVITÉS | 172.16.60.0/24 | Wi-Fi Visiteurs (Accès Internet uniquement) | SW-01 |
-| 99 | MANAGEMENT | 10.0.99.0/24 | Gestion des équipements | Tous les Switches, Routeurs, Firewalls |
+![Cisco](https://img.shields.io/badge/Cisco-Networking-blue.svg)
+![Fortinet](https://img.shields.io/badge/Fortinet-Security-red.svg)
+![Zabbix](https://img.shields.io/badge/Monitoring-Zabbix%207.0-green.svg)
+![HA](https://img.shields.io/badge/HA-HSRP%20%7C%20EtherChannel-lightgrey.svg)
+![ZeroTrust](https://img.shields.io/badge/Security-Zero%20Trust-orange.svg)
 
 ---
 
-## 🌐 3. Services de Nommage & Connectivité (DNS/DHCP)
+## 🌐 1. Topologie Réseau et Architecture (Vue d'Ensemble)
 
-### 3.1 Matrice DNS (Connectivité Totale par FQDN)
-La résolution DNS est centralisée sur l'Active Directory (`corp.local`).
+L'infrastructure suit un modèle hiérarchique **Core-Distribution-Accès (3-Tier)**, garantissant évolutivité, performance et résilience. La sécurité est renforcée par une stratégie **Zero-Trust** à travers les couches.
 
-| Hostname | Adresse IP | Service / Rôle |
-| :--- | :--- | :--- |
-| **rtr-edge.corp.local** | 192.168.99.254 | Routeur Cisco de Bordure |
-| **fw-cluster.corp.local**| 192.168.99.1 | IP Virtuelle du Cluster FortiGate |
-| **srv-ad01.corp.local** | 192.168.20.10 | AD DS / DNS Maître / DHCP |
-| **lnx-mail01.corp.local**| 192.168.20.51 | Messagerie Zimbra (MX Record) |
-| **lnx-zbx01.corp.local** | 192.168.20.50 | Supervision Zabbix Server |
-| **lnx-sto01.corp.local** | 192.168.20.52 | Stockage (NFS / TFTP / FTPS) |
-| **dmz-web01.corp.local** | 192.168.50.10 | Serveur Web (DMZ) |
+### Schéma de la Topologie Globale
+🖼️ **<img width="1919" height="929" alt="image" src="https://github.com/user-attachments/assets/68696d1a-c629-47e1-825a-f6a705ab2bc3" />
+**
+> *Légende : Topologie physique du réseau d'entreprise, incluant les couches Core, Distribution, Accès, les Firewalls FortiGate et le routeur WAN.*
 
-### 3.2 Relais DHCP (IP Helper)
-Le FortiGate agit comme **DHCP Relay** pour tous les VLANs, redirigeant les requêtes vers `SRV-AD01` (VLAN 20).
+### Flux de Communication
+Le trafic réseau est rigoureusement contrôlé :
+1.  Les **Clients** initient des requêtes vers leurs passerelles sur la couche **Distribution**.
+2.  Le trafic inter-VLAN est routé sur la couche **Distribution** ou **Core**.
+3.  Tout le trafic destiné à la **WAN (Internet)** ou à la **DMZ** passe impérativement par le cluster **FortiGate**.
+4.  Les politiques du FortiGate contrôlent l'accès basé sur les zones de confiance (LAN, DMZ, WAN).
 
 ---
 
-## 🖥️ 4. Inventaire des Machines Virtuelles & Clients
+## 🛠️ 2. Composants Clés et Fonctions
 
-### 4.1 Machines Virtuelles (Serveurs)
-| VM Hostname | OS | Fonctions Principales | VLANs Associées |
-| :--- | :--- | :--- | :--- |
-| **SRV-AD01** | Windows Server | Active Directory, DNS, DHCP, RDP (Jump Server) | 20, 30 |
-| **SRV-FS01** | Windows Server | File Server (Samba/SMB), Partages réseau | 20 |
-| **LNX-ZBX01** | Linux | Zabbix Server, Syslog, SNMP (Monitoring réseau) | 20, 99 |
-| **LNX-SRV01** | Linux | Zimbra (Webmail), VPN Gateway, Reverse Proxy (NGINX), TFTP/FTPS/NFS | 20, 70 (WEB), 80 (VPN Gateway) |
-| **DMZ-WEB01** | Linux | Serveur Web (NGINX/Apache), Proxy Mail | 50 (DMZ) |
+### A. Couches Réseau Cisco (GNS3)
 
-### 4.2 Clients (Postes Utilisateurs)
-| Client Hostname | Système | Fonction | VLAN | Switch de Connexion |
-| :--- | :--- | :--- | :--- | :--- |
-| **LNXCLIENT-01** | Linux | Client utilisateur standard | 10 | SW-01 |
-| **LNXCLIENT-02** | Linux | Second client utilisateur pour tests parallèles | 10 | SW-01 |
-| **PC-ADMIN01** | Windows | Poste d'administration réseau | 30 | SW-03 |
+*   **Core Layer (`TLS-CORE-SW-01/02`)**
+    *   **Rôle :** Backbone de commutation et de routage à haute vitesse.
+    *   **Redondance :** Liens agrégés **EtherChannel (LACP)** entre les deux switches Core.
+    *   **Routage :** OSPFv2 pour la convergence rapide.
+
+*   **Distribution Layer (`TLS-DIST-SW-01/02`)**
+    *   **Rôle :** Fournit les passerelles (Gateways) pour toutes les VLANs (Inter-VLAN Routing).
+    *   **Haute Disponibilité :** Implémentation du **HSRP (Hot Standby Router Protocol)** pour les passerelles virtuelles.
+    *   **Sécurité :** Point d'application des ACLs pour le contrôle inter-VLAN.
+
+*   **Access Layer (`TLS-ACC-SW-01/02/03/04`)**
+    *   **Rôle :** Connecte les utilisateurs, serveurs VMware et dispositifs DMZ.
+    *   **Sécurité :** Configuration de **Port-Security** et **BPDU Guard** pour la protection des points d'accès.
+
+### B. Sécurité Périmétrique Fortinet (FortiGate Cluster)
+
+*   **Équipement :** Deux FortiGate (VM) en cluster **HA (Haute Disponibilité)** Actif/Passif.
+*   **Rôle :** Point d'entrée et de sortie unique pour toutes les zones de confiance (LAN, DMZ, WAN).
+*   **Fonctionnalités :**
+    *   **Inspection SSL :** Déchiffre le trafic HTTPS pour détecter les menaces cachées.
+    *   **SD-WAN :** Optimisation et routage des liens WAN (simulé).
+    *   **Politiques Zero-Trust :** Contrôle d'accès granulaire basé sur les zones et les services.
+
+### C. Services d'Infrastructure (VMware)
+
+*   **Hyperviseur :** VMware Workstation (simule un environnement ESXi).
+*   **Serveurs :**
+    *   `TLS-ZBX-MON-01` (Zabbix 7.0 Server) : **Supervision centralisée** de tous les équipements réseau et serveurs via SNMPv3 et Zabbix Agent.
+    *   `TLS-INFRA-SRV-01` (DNS / DHCP / NTP) : Fournit les services d'infrastructure essentiels à toutes les VLANs.
+    *   `TLS-AUTH-SRV-01` (OpenLDAP) : Fournit les services d'identité pour les futures intégrations (ex: FortiGate FSSO).
 
 ---
 
-## 🛡️ 5. Sécurité & Hardening
-*   **Segmentation :** Isolation stricte de la DMZ et des VLANs.
-*   **Sécurité Portuaire :** BPDU Guard, Port-Security et Dynamic ARP Inspection activés.
-*   **VPN SSL :** Accès distant sécurisé pour les administrateurs lié à l'Active Directory (LDAP).
+## 📋 3. Plan d'Adresses IP et VLANs
+
+Une segmentation réseau stricte est appliquée via des VLANs, avec des passerelles HSRP sur la couche de Distribution.
+
+| ID VLAN | Nom VLAN | Sub-réseau | Passerelle HSRP/FW | Mappage VMware |
+| :------ | :------- | :--------- | :----------------- | :------------- |
+| **10**  | `USERS`    | `172.16.10.0/24` | `172.16.10.254`    | VMnet10        |
+| **20**  | `SERVERS`  | `172.16.20.0/24` | `172.16.20.254`    | VMnet2         |
+| **30**  | `ADMIN`    | `172.16.30.0/24` | `172.16.30.254`    | VMnet3         |
+| **50**  | `DMZ_WEB`  | `10.0.50.0/24`   | `10.0.50.1` (FortiGate) | VMnet5         |
+| **60**  | `GUEST`    | `172.16.60.0/24` | `172.16.60.254`    | VMnet4         |
+| **99**  | `MGMT`     | `172.16.99.0/24` | `172.16.99.254`    | N/A            |
 
 ---
 
-## 🛠️ 6. Plan de Validation (Stress Test)
-1.  **Test Redondance Firewall :** Provoquer la panne de `FG-01`. Vérifier la continuité du service Internet et DMZ.
-2.  **Test Redondance Core :** Éteindre `CORE-01` et `CORE-04`. Confirmer que le trafic USERS <-> SERVERS et DMZ <-> SERVERS continue via les cœurs restants.
-3.  **Résolution DNS :** Ping réussi par nom FQDN depuis chaque segment du réseau.
-4.  **Audit Zabbix :** Confirmer que l'état des liens redondants est correctement supervisé.
+## 📊 4. Observabilité (Zabbix 7.0)
+
+🖼️ **[INSÉRER ICI LE LIEN VERS VOTRE IMAGE DU DASHBOARD ZABBIX]**
+> *Légende : Vue d'un tableau de bord Zabbix affichant l'état des liens et la performance des équipements Cisco et FortiGate.*
+
+*   **Collecte de Données :** Utilisation de **SNMPv3** pour la surveillance des équipements réseau (Cisco, FortiGate) et de **Zabbix Agent 2** pour les serveurs Linux.
+*   **Alerting :** Configuration d'alertes pour les pannes de liens, les saturations de CPU/mémoire et les changements d'état HSRP/HA.
+*   **Cartes Réseau :** Création de cartes visuelles dans Zabbix pour une représentation en temps réel de l'état de la topologie.
+
+---
+
+## 📂 5. Structure du Dépôt GitHub
+
+```text
+Project-HORIZON/
+├── 01-Network-Cisco/           # Configurations des équipements Cisco (Core, Dist, Acc, OSPF, HSRP, VLANs)
+├── 02-Security-FortiGate/      # Configuration des Firewalls FortiGate (HA, Zones, Politiques, Inspection SSL)
+├── 03-Infrastructure-VMware/   # Configurations des VMs (Zabbix, DNS/DHCP, LDAP)
+├── 04-Documentation/           # Diagrammes (Mermaid, PNG), plan d'adressage
+└── README.md                   # Ce fichier
