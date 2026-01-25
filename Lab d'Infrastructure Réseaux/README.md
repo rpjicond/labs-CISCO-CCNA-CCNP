@@ -1,103 +1,109 @@
-# 🚀 Projet HORIZON: Architecture Réseau d'Entreprise (3-Tier, FortiOS & Zabbix)
-> **Déploiement d'une infrastructure hybride Zero-Trust pour centres de données, avec supervision proactive et haute disponibilité.**
+# 📘 Project HORIZON : Documentation de Design (LLD)
 
-Ce projet est une conception et une implémentation d'une architecture réseau d'entreprise complète, modélisée sur un campus d'entreprise de Toulouse. Il intègre des couches de réseau Cisco (Core, Distribution, Accès), une sécurité périmétrique Fortinet et une supervision centralisée avec Zabbix 7.0.
+Ceci est la **Documentation Technique Officielle (Low Level Design - LLD)** de votre projet.
 
-![Cisco](https://img.shields.io/badge/Cisco-Networking-blue.svg)
-![Fortinet](https://img.shields.io/badge/Fortinet-Security-red.svg)
-![Zabbix](https://img.shields.io/badge/Monitoring-Zabbix%207.0-green.svg)
-![HA](https://img.shields.io/badge/HA-HSRP%20%7C%20EtherChannel-lightgrey.svg)
-![ZeroTrust](https://img.shields.io/badge/Security-Zero%20Trust-orange.svg)
+En tant qu’**Ingénieur Réseau**, vous devez conserver ce document dans un fichier appelé **README.md** (ou DESIGN-DOC.md) ou dans **Notion**. C’est la **« Bible » de votre réseau**. Sans elle, vous vous perdez au moment de configurer les IP.
 
 ---
 
-## 🌐 1. Topologie Réseau et Architecture (Vue d'Ensemble)
+## 1. Standard de Nommage
 
-L'infrastructure suit un modèle hiérarchique **Core-Distribution-Accès (3-Tier)**, garantissant évolutivité, performance et résilience. La sécurité est renforcée par une stratégie **Zero-Trust** à travers les couches.
+**Code du site** : TLS (Toulouse)
 
-### Schéma de la Topologie Globale
-🖼️ **<img width="1919" height="929" alt="image" src="https://github.com/user-attachments/assets/68696d1a-c629-47e1-825a-f6a705ab2bc3" />
-**
-> *Légende : Topologie physique du réseau d'entreprise, incluant les couches Core, Distribution, Accès, les Firewalls FortiGate et le routeur WAN.*
+**Format** :
 
-### Flux de Communication
-Le trafic réseau est rigoureusement contrôlé :
-1.  Les **Clients** initient des requêtes vers leurs passerelles sur la couche **Distribution**.
-2.  Le trafic inter-VLAN est routé sur la couche **Distribution** ou **Core**.
-3.  Tout le trafic destiné à la **WAN (Internet)** ou à la **DMZ** passe impérativement par le cluster **FortiGate**.
-4.  Les politiques du FortiGate contrôlent l'accès basé sur les zones de confiance (LAN, DMZ, WAN).
+```
+[SITE]-[FONCTION]-[TYPE]-[NUMÉRO]
+```
+
+**Exemple** :
+
+* `TLS-CORE-SW-01` (Switch Core 01 de Toulouse)
 
 ---
 
-## 🛠️ 2. Composants Clés et Fonctions
+## 2. Table des VLANs et Mappage VMware
 
-### A. Couches Réseau Cisco (GNS3)
+Cette table est **le secret** pour faire communiquer **GNS3** avec **VMware**.
 
-*   **Core Layer (`TLS-CORE-SW-01/02`)**
-    *   **Rôle :** Backbone de commutation et de routage à haute vitesse.
-    *   **Redondance :** Liens agrégés **EtherChannel (LACP)** entre les deux switches Core.
-    *   **Routage :** OSPFv2 pour la convergence rapide.
-
-*   **Distribution Layer (`TLS-DIST-SW-01/02`)**
-    *   **Rôle :** Fournit les passerelles (Gateways) pour toutes les VLANs (Inter-VLAN Routing).
-    *   **Haute Disponibilité :** Implémentation du **HSRP (Hot Standby Router Protocol)** pour les passerelles virtuelles.
-    *   **Sécurité :** Point d'application des ACLs pour le contrôle inter-VLAN.
-
-*   **Access Layer (`TLS-ACC-SW-01/02/03/04`)**
-    *   **Rôle :** Connecte les utilisateurs, serveurs VMware et dispositifs DMZ.
-    *   **Sécurité :** Configuration de **Port-Security** et **BPDU Guard** pour la protection des points d'accès.
-
-### B. Sécurité Périmétrique Fortinet (FortiGate Cluster)
-
-*   **Équipement :** Deux FortiGate (VM) en cluster **HA (Haute Disponibilité)** Actif/Passif.
-*   **Rôle :** Point d'entrée et de sortie unique pour toutes les zones de confiance (LAN, DMZ, WAN).
-*   **Fonctionnalités :**
-    *   **Inspection SSL :** Déchiffre le trafic HTTPS pour détecter les menaces cachées.
-    *   **SD-WAN :** Optimisation et routage des liens WAN (simulé).
-    *   **Politiques Zero-Trust :** Contrôle d'accès granulaire basé sur les zones et les services.
-
-### C. Services d'Infrastructure (VMware)
-
-*   **Hyperviseur :** VMware Workstation (simule un environnement ESXi).
-*   **Serveurs :**
-    *   `TLS-ZBX-MON-01` (Zabbix 7.0 Server) : **Supervision centralisée** de tous les équipements réseau et serveurs via SNMPv3 et Zabbix Agent.
-    *   `TLS-INFRA-SRV-01` (DNS / DHCP / NTP) : Fournit les services d'infrastructure essentiels à toutes les VLANs.
-    *   `TLS-AUTH-SRV-01` (OpenLDAP) : Fournit les services d'identité pour les futures intégrations (ex: FortiGate FSSO).
+| ID VLAN | Nom VLAN | Sous-réseau (CIDR) | Passerelle (HSRP/FW) | VMware VMnet | Fonction                              |
+| ------: | -------- | ------------------ | -------------------- | ------------ | ------------------------------------- |
+|      10 | USERS    | 172.16.10.0/24     | .254                 | VMnet10      | Réseau Utilisateurs / Wi‑Fi Corporate |
+|      20 | SERVERS  | 172.16.20.0/24     | .254                 | VMnet2       | Data Center (LDAP, Zabbix, DNS)       |
+|      30 | ADMIN    | 172.16.30.0/24     | .254                 | VMnet3       | Réseau de Gestion / PC Admin          |
+|      60 | GUEST    | 172.16.60.0/24     | .254                 | VMnet4       | Wi‑Fi Visiteurs (Isolé)               |
+|      70 | DMZ_WEB  | 10.0.70.0/24       | .1 (FortiGate)       | VMnet5       | Serveurs Publics (Bordure)            |
+|      99 | MGMT     | 172.16.99.0/24     | .254                 | N/A          | Gestion des Switches / Routeurs       |
 
 ---
 
-## 📋 3. Plan d'Adresses IP et VLANs
+## 3. Inventaire des Serveurs (VMware)
 
-Une segmentation réseau stricte est appliquée via des VLANs, avec des passerelles HSRP sur la couche de Distribution.
+Configurez les cartes réseau de vos VMs **exactement comme ci‑dessous** :
 
-| ID VLAN | Nom VLAN | Sub-réseau | Passerelle HSRP/FW | Mappage VMware |
-| :------ | :------- | :--------- | :----------------- | :------------- |
-| **10**  | `USERS`    | `172.16.10.0/24` | `172.16.10.254`    | VMnet10        |
-| **20**  | `SERVERS`  | `172.16.20.0/24` | `172.16.20.254`    | VMnet2         |
-| **30**  | `ADMIN`    | `172.16.30.0/24` | `172.16.30.254`    | VMnet3         |
-| **50**  | `DMZ_WEB`  | `10.0.50.0/24`   | `10.0.50.1` (FortiGate) | VMnet5         |
-| **60**  | `GUEST`    | `172.16.60.0/24` | `172.16.60.254`    | VMnet4         |
-| **99**  | `MGMT`     | `172.16.99.0/24` | `172.16.99.254`    | N/A            |
-
----
-
-## 📊 4. Observabilité (Zabbix 7.0)
-
-🖼️ **[INSÉRER ICI LE LIEN VERS VOTRE IMAGE DU DASHBOARD ZABBIX]**
-> *Légende : Vue d'un tableau de bord Zabbix affichant l'état des liens et la performance des équipements Cisco et FortiGate.*
-
-*   **Collecte de Données :** Utilisation de **SNMPv3** pour la surveillance des équipements réseau (Cisco, FortiGate) et de **Zabbix Agent 2** pour les serveurs Linux.
-*   **Alerting :** Configuration d'alertes pour les pannes de liens, les saturations de CPU/mémoire et les changements d'état HSRP/HA.
-*   **Cartes Réseau :** Création de cartes visuelles dans Zabbix pour une représentation en temps réel de l'état de la topologie.
+| Hostname         | Fonction             | IP Statique (Linux) | VLAN Cible | Configuration VMware |
+| ---------------- | -------------------- | ------------------- | ---------- | -------------------- |
+| TLS-AUTH-SRV-01  | OpenLDAP / Identité  | 172.16.20.10        | VLAN 20    | Custom : VMnet2      |
+| TLS-INFRA-SRV-01 | DNS / DHCP / NTP     | 172.16.20.11        | VLAN 20    | Custom : VMnet2      |
+| TLS-FILE-SRV-01  | Serveur de Fichiers  | 172.16.20.12        | VLAN 20    | Custom : VMnet2      |
+| TLS-ZBX-SRV-01   | Serveur Zabbix       | 172.16.20.13        | VLAN 20    | Custom : VMnet2      |
+| TLS-ADM-WK-01    | PC Admin (Win/Linux) | 172.16.30.10        | VLAN 30    | Custom : VMnet3      |
+| TLS-EDGE-GW-01   | Proxy / Web DMZ      | 10.0.70.10          | VLAN 70    | Custom : VMnet5      |
 
 ---
 
-## 📂 5. Structure du Dépôt GitHub
+## 4. Inventaire Réseau (GNS3)
 
-```text
-Project-HORIZON/
-├── 01-Network-Cisco/           # Configurations des équipements Cisco (Core, Dist, Acc, OSPF, HSRP, VLANs)
-├── 02-Security-FortiGate/      # Configuration des Firewalls FortiGate (HA, Zones, Politiques, Inspection SSL)
-├── 03-Infrastructure-VMware/   # Configurations des VMs (Zabbix, DNS/DHCP, LDAP)
-├── 04-Documentation/           # Diagrammes (Mermaid, PNG), plan d'adressage
-└── README.md                   # Ce fichier
+Adresses IP de gestion (**Loopback0**) pour l’accès **SSH** et le monitoring **Zabbix**.
+
+| Hostname       | Modèle       | Loopback0 (IP Mgmt) | Fonction                     |
+| -------------- | ------------ | ------------------- | ---------------------------- |
+| TLS-FW-EDGE-01 | FortiGate VM | 10.255.0.1          | Firewall Principal (Actif)   |
+| TLS-FW-EDGE-02 | FortiGate VM | 10.255.0.2          | Firewall Secondaire (Passif) |
+| TLS-CORE-SW-01 | Cisco L3     | 10.255.0.3          | Backbone Primaire            |
+| TLS-CORE-SW-02 | Cisco L3     | 10.255.0.4          | Backbone Secondaire          |
+| TLS-DIST-SW-01 | Cisco L3     | 10.255.0.5          | Passerelle HSRP Master       |
+| TLS-DIST-SW-02 | Cisco L3     | 10.255.0.6          | Passerelle HSRP Backup       |
+| TLS-ACC-SW-xx  | Cisco L2     | 10.255.0.x          | Accès (VLAN 99)              |
+
+---
+
+## ✅ Ce que vous devez faire MAINTENANT
+
+### Dans VMware (Virtual Network Editor)
+
+* Assurez‑vous que les **VMnet 2, 3, 4, 5 et 10** sont créées conformément à la **table 2**.
+
+### Dans les VMs (Settings)
+
+* Pour chaque machine virtuelle, modifiez la carte réseau vers la **VMnet correcte** selon la **table 3**.
+
+  * Exemple : `FILE-SRV-01` → **VMnet2**
+
+### Dans GNS3 (Clouds)
+
+* Faites un clic droit sur les icônes de **nuage (vSwitch)**
+* Configurez :
+
+  * Nuage connecté à **ACC-SW-01** → Ajouter l’interface **VMnet10**
+  * Nuage connecté à **ACC-SW-02 (Serveurs)** → Ajouter l’interface **VMnet2**
+  * Nuage connecté à **ACC-SW-04 (Admin)** → Ajouter l’interface **VMnet3**
+  * Nuage de la **DMZ** → Ajouter l’interface **VMnet5**
+
+---
+
+## ⏭️ Prochaine Étape
+
+Maintenant que la documentation est prête et que les VMs sont **connectées aux bons réseaux**, il faut faire **circuler le sang dans les veines du réseau**.
+
+### Configuration du « Cœur Cisco »
+
+* Démarrer les **switches Core et Distribution** dans GNS3
+* Configurer les **trunks** entre eux
+* Créer les **VLANs** dans la base de données des switches
+* Configurer le **HSRP** (pour que **172.16.20.254** existe et que vos serveurs aient accès à Internet)
+
+---
+
+📌 **Ce document doit toujours être ouvert pendant vos configurations.**
+Il est votre référence absolue.
