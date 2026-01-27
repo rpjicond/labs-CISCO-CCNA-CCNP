@@ -4,7 +4,9 @@ Ceci est la **Documentation Technique Officielle (Low Level Design - LLD)** de v
 
 En tant qu’**Ingénieur Réseau**, vous devez conserver ce document dans un fichier appelé **README.md** (ou DESIGN-DOC.md) ou dans **Notion**. C’est la **« Bible » de votre réseau**. Sans elle, vous vous perdez au moment de configurer les IP.
 
-**![Uploading image.png…]()**
+<img width="1868" height="852" alt="Captura de ecrã 2026-01-27 133454" src="https://github.com/user-attachments/assets/89679b80-5ac6-49b7-842f-a6048574434c" />
+
+
 
 ---
 
